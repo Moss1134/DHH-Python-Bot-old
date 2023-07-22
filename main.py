@@ -62,8 +62,8 @@ async def custom2_embed(interaction: discord.Interaction, inline: bool, title: s
 
 @discord_client.tree.command(name="help", description="Help command")
 async def help(interaction: discord.Interaction):
-    embed = discord.Embed(title="Help", color=0xcba3e8)
-    embed.add_field(name="Place Holder", value="PLace holder", inline=False) # Need to add actually helpful messages here
+    embed = discord.Embed(title="Help", color=0xcba3e8, url="https://github.com/Moss1134/MentalHealthDiscordApp/wiki")
+    embed.add_field(name="Where can I go to understand the discord bot commands?", value="You can head to the Work In Progress Github Wiki", inline=False)
     await interaction.response.send_message(embed=embed)
 
 # Commands to do with channels
@@ -91,5 +91,10 @@ async def on_message(message):
         if message.content == "Thank you for verifying! You will now be added as a server user!":
             await message.delete(delay=3)
 
+# Introduction system:
+
+@discord_client.tree.command(name="introduce", description="creates an introduction for you!")
+async def introduce(interaction: discord.Interaction, name: str, age: int, pronouns: str, region: str, triggers: str, hobbies: str, other: str):
+    await interaction.response.send_message(f"- --**@{str(interaction.user)}**-- \n - My name is: **{name}** \n - I am **{str(age)}** years old! \n - I use **{pronouns}** \n - I live in: **{region}** \n - When talking to me please refrain from: **{triggers}** \n - I enjoy: **{hobbies}** \n - And a little note about me: \n **{other}**")
 
 discord_client.run(config.discord_application_token)
