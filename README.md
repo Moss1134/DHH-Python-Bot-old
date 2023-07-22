@@ -12,7 +12,6 @@ DHH is seperated into Two major parts:
 
 ### Front-End
 <p>On the front end we have the DHH Discord server! Of which the perma-link to join is; https://discord.gg/KdcnQhXf2H</p> <br>
-> #### Front End 
 > The current progress is not alot but we have the outlaying structure for the server ready!
 > This is going to require much more work, however!
 >
