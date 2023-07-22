@@ -11,14 +11,17 @@ DHH is seperated into Two major parts:
 </p>
 
 ### Front-End
+
 <p>On the front end we have the DHH Discord server! Of which the perma-link to join is; https://discord.gg/KdcnQhXf2H</p> <br>
+
 > The current progress is not alot but we have the outlaying structure for the server ready!
 > This is going to require much more work, however!
->
 > I am currently the only one working on the front-end but I am looking for someone to take over the front-end entirely!
 
 ### Back-End
+
 <p>The back end is represented in our Python bot!</p>
+
 > I currently have the outlaying structure for the main part of DHH to slowly grow from
 > This is at the early stages of development so don't expect too much!
 > Unforunately the discord bot is running on my hardware currently so it's online time may vary or be very unstable.
