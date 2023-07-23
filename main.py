@@ -1,14 +1,18 @@
 import discord
 from discord.app_commands import CommandTree
+import random
 import config
 
+# Discord API Set-up
 intents = discord.Intents.all()
 discord_client = discord.Client(intents=intents)
 tree = CommandTree(discord_client)
 discord_client.tree = tree
 
-@discord_client.event
+# Globals
+list_of_listeners = []
 
+@discord_client.event
 async def on_ready():
     synced = await discord_client.tree.sync()
     print(str(len(synced)) + " commands have been loaded and are ready for use!")
@@ -77,15 +81,16 @@ async def create_test_channel(interaction: discord.Interaction):
 
 @discord_client.event
 async def on_message(message):
-    if message.channel.id == 1132371296785801237: # Checks if message was coming from the #Verify Text channel
-        if message.author != discord_client.user:
+    if message.channel.id == config.guild_veify_channel_id: # Checks if message was coming from the #Verify Text channel
+        if message.author != discord_client.user: # Checks if the message was by the python bot
             if message.content != "I am a user of the DHH and I will pledge to follow all rules. I am not currently affected by self-harm, or suicide, and I do not abuse anyone.":
                 await message.reply("Please read the Embed above!")
                 await message.delete()
             else:
                 await message.reply("Thank you for verifying! You will now be added as a server user!")
                 await message.delete()
-                await message.author.add_roles(message.guild.get_role(int(1132373927881080842)))
+                await message.author.add_roles(message.guild.get_role(int(config.guild_veified_role_id))) # adds the role "Verified" to the user
+        # deletes the bots response after 3 seconds
         if message.content == "Please read the Embed above!":
             await message.delete(delay=3)
         if message.content == "Thank you for verifying! You will now be added as a server user!":
@@ -97,4 +102,81 @@ async def on_message(message):
 async def introduce(interaction: discord.Interaction, name: str, age: int, pronouns: str, region: str, triggers: str, hobbies: str, other: str):
     await interaction.response.send_message(f"- --**@{str(interaction.user)}**-- \n - My name is: **{name}** \n - I am **{str(age)}** years old! \n - I use **{pronouns}** \n - I live in: **{region}** \n - When talking to me please refrain from: **{triggers}** \n - I enjoy: **{hobbies}** \n - And a little note about me: \n **{other}**")
 
+# Listener and Member role System
+
+# Listening queue join
+
+@discord_client.tree.command(name="listening", description="Adds to the list of people waiting to listen to other members")
+async def listening(interaction: discord.Interaction):
+    global list_of_listeners
+    if str(interaction.user) not in list_of_listeners:
+        list_of_listeners.append(str(interaction.user))
+        await interaction.response.send_message(f"Thank you for adding yourself to the Listener list! You will be connected to a Member as soon as someone requests a Listener!")
+    else:
+        await interaction.response.send_message("You are already a part of the listener list, just hang on until someone requests a Listener. You can remove yourself from the list by using the `/leave` command")
+
+# Listening queue leave
+
+@discord_client.tree.command(name="leave")
+async def leave(interaction: discord.Interaction):
+    global list_of_listeners
+    if str(interaction.user) in list_of_listeners:
+        list_of_listeners.remove(str(interaction.user))
+        await interaction.response.send_message("You have been removed from the Listner list")
+    else:
+        await interaction.response.send_message("You are not a part of the Listner list, if you would like to add yourself to the list; use the /listening command.")
+
+# Debug Commands for Listening queue
+
+@discord_client.tree.command(name="dev")
+async def dev(interaction: discord.Interaction):
+    await interaction.response.send_message(str(list_of_listeners))
+
+@discord_client.tree.command(name="dev_add")
+async def dev_add(interaction: discord.Interaction, name: str):
+    global list_of_listeners
+    list_of_listeners.append(name)
+    await interaction.response.send_message("Added")    
+
+@discord_client.tree.command(name="dev_set")
+async def dev_add(interaction: discord.Interaction):
+    global list_of_listeners
+    list_of_listeners.append("hey1")
+    list_of_listeners.append("hey2")
+    list_of_listeners.append("hey3")
+    list_of_listeners.append("hey4")
+    list_of_listeners.append("hey5")
+    list_of_listeners.append("hey6")
+    await interaction.response.send_message("Added") 
+
+# memeber connects with listener
+
+@discord_client.tree.command(name="reach1", description="reaches out to a random listner")
+async def reach1(interaction: discord.Interaction):
+    global list_of_listeners
+    listener = list_of_listeners[random.randint(0,len(list_of_listeners)-1)]
+    await interaction.response.send_message("We will connect you with " + str(listener) + " \n This is a test message", ephemeral=True)
+    # Find the category using its ID
+    category_id = 1132460675957014548
+    category = discord.utils.get(interaction.guild.categories, id=category_id)
+    # Check if the category was found before creating the text channel
+    if category is not None:
+        num_of_channels = len(category.channels)
+        channel = await category.create_text_channel(name="chat-room-" + str(num_of_channels))
+    else:
+        print(f"Category with ID {category_id} not found.")
+    await channel.set_permissions(discord.utils.get(interaction.guild.roles, id=config.guild_global_role_id), view_channel=False)
+    room_role = await interaction.guild.create_role(name=f"room " + str(num_of_channels))
+    perms = discord.PermissionOverwrite(view_channel=True, send_messages=True)
+    await channel.set_permissions(discord.utils.get(interaction.guild.roles, id=room_role.id), overwrite=perms)
+    listener = interaction.guild.get_member_named(listener)
+    await listener.add_roles(discord.utils.get(interaction.guild.roles, id=room_role.id))
+    await interaction.user.add_roles(discord.utils.get(interaction.guild.roles, id=room_role.id))
+    
+
+    
+@discord_client.tree.command(name="done", description="Closes a room once you are done talking")
+async def done(interaction: discord.Interaction):
+    await interaction.response.send_message("This is a incomplete command and nothing has run except sending this message.")
+    
 discord_client.run(config.discord_application_token)
