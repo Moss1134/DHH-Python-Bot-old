@@ -70,20 +70,13 @@ async def help(interaction: discord.Interaction):
     embed.add_field(name="Where can I go to understand the discord bot commands?", value="You can head to the Work In Progress Github Wiki", inline=False)
     await interaction.response.send_message(embed=embed)
 
-# Commands to do with channels
-
-@discord_client.tree.command(name="create_test_channel", description="Creates a test channel")
-async def create_test_channel(interaction: discord.Interaction):
-    await interaction.guild.create_text_channel(name="test", position=len(interaction.guild.channels) + 1)
-    await interaction.response.send_message("Channel test has been created")
-
 # verification system
 
 @discord_client.event
 async def on_message(message):
     if message.channel.id == config.guild_veify_channel_id: # Checks if message was coming from the #Verify Text channel
         if message.author != discord_client.user: # Checks if the message was by the python bot
-            if message.content != "I am a user of the DHH and I will pledge to follow all rules. I am not currently affected by self-harm, or suicide, and I do not abuse anyone.":
+            if message.content != "I pledge to follow all rules of DHH, be respectful and understanding towards all users.":
                 await message.reply("Please read the Embed above!")
                 await message.delete()
             else:
@@ -95,6 +88,16 @@ async def on_message(message):
             await message.delete(delay=3)
         if message.content == "Thank you for verifying! You will now be added as a server user!":
             await message.delete(delay=3)
+
+@discord_client.event
+async def on_raw_reaction_add(payload):
+    message_id = config.verify_message_id
+    emoji = "👍"
+    emoji_str = str(payload.emoji)
+    if payload.message_id == message_id and emoji_str == emoji:
+        guild = discord_client.get_guild(payload.guild_id)
+        user = guild.get_member(payload.user_id)
+        await user.add_roles(guild.get_role(int(config.guild_veified_role_id)))
 
 # Introduction system:
 
@@ -126,57 +129,51 @@ async def leave(interaction: discord.Interaction):
     else:
         await interaction.response.send_message("You are not a part of the Listner list, if you would like to add yourself to the list; use the /listening command.")
 
-# Debug Commands for Listening queue
-
-@discord_client.tree.command(name="dev")
-async def dev(interaction: discord.Interaction):
-    await interaction.response.send_message(str(list_of_listeners))
-
-@discord_client.tree.command(name="dev_add")
-async def dev_add(interaction: discord.Interaction, name: str):
-    global list_of_listeners
-    list_of_listeners.append(name)
-    await interaction.response.send_message("Added")    
-
-@discord_client.tree.command(name="dev_set")
-async def dev_add(interaction: discord.Interaction):
-    global list_of_listeners
-    list_of_listeners.append("hey1")
-    list_of_listeners.append("hey2")
-    list_of_listeners.append("hey3")
-    list_of_listeners.append("hey4")
-    list_of_listeners.append("hey5")
-    list_of_listeners.append("hey6")
-    await interaction.response.send_message("Added") 
-
 # memeber connects with listener
 
-@discord_client.tree.command(name="reach1", description="reaches out to a random listner")
-async def reach1(interaction: discord.Interaction):
+@discord_client.tree.command(name="reach", description="Reaches out to a random Active Listener")
+async def reach(interaction: discord.Interaction):
     global list_of_listeners
-    listener = list_of_listeners[random.randint(0,len(list_of_listeners)-1)]
-    await interaction.response.send_message("We will connect you with " + str(listener) + " \n This is a test message", ephemeral=True)
-    # Find the category using its ID
-    category_id = 1132460675957014548
-    category = discord.utils.get(interaction.guild.categories, id=category_id)
-    # Check if the category was found before creating the text channel
-    if category is not None:
-        num_of_channels = len(category.channels)
-        channel = await category.create_text_channel(name="chat-room-" + str(num_of_channels))
+    if list_of_listeners.count == 0:
+        await interaction.response.send_message("Sorry, there are no current listeners avaliable, please wait 10 minutes and try again.")
     else:
-        print(f"Category with ID {category_id} not found.")
-    await channel.set_permissions(discord.utils.get(interaction.guild.roles, id=config.guild_global_role_id), view_channel=False)
-    room_role = await interaction.guild.create_role(name=f"room " + str(num_of_channels))
-    perms = discord.PermissionOverwrite(view_channel=True, send_messages=True)
-    await channel.set_permissions(discord.utils.get(interaction.guild.roles, id=room_role.id), overwrite=perms)
-    listener = interaction.guild.get_member_named(listener)
-    await listener.add_roles(discord.utils.get(interaction.guild.roles, id=room_role.id))
-    await interaction.user.add_roles(discord.utils.get(interaction.guild.roles, id=room_role.id))
-    
+        # Variables
+        category = discord.utils.get(interaction.guild.categories, id=config.guild_room_category_id)
+        listener = list_of_listeners[random.randint(0,len(list_of_listeners)-1)]
+        listener = interaction.guild.get_member_named(listener)
+        num_of_chatrooms = len(category.channels)
+        everyone_role = discord.utils.get(interaction.guild.roles, id=config.guild_global_role_id)
+        # Create a channel:
+        channel = await category.create_text_channel(name=f"chatroom-{str(num_of_chatrooms)}")
+        # Sets the permssions for @everyone:
+        perms = discord.PermissionOverwrite(view_channel=False)
+        await channel.set_permissions(everyone_role, overwrite=perms)
+        # Create room role:
+        room_role = await interaction.guild.create_role(name=f"room " + str(num_of_chatrooms))
+        room_role = discord.utils.get(interaction.guild.roles, id=room_role.id)
+        # Overwrite permissions for room_role:
+        perms = discord.PermissionOverwrite(view_channel=True, send_messages=True)
+        await channel.set_permissions(room_role, overwrite=perms)
+        # Give everyone roles:
+        await listener.add_roles(room_role)
+        await interaction.user.add_roles(room_role)
+        await interaction.response.send_message(f"You have been connected with a listener! Please join chatroom {str(num_of_chatrooms)}!")
 
-    
+# Deletes role and channel after member/listener is fininhed with the chat.
+
 @discord_client.tree.command(name="done", description="Closes a room once you are done talking")
 async def done(interaction: discord.Interaction):
-    await interaction.response.send_message("This is a incomplete command and nothing has run except sending this message.")
+    category = discord.utils.get(interaction.guild.categories, id=config.guild_room_category_id)
+    list_of_removable_channels = [channel.name for channel in category.channels]
+    if interaction.channel.name in list_of_removable_channels:
+        # Gets the room number for the room in question
+        num: int = interaction.channel.name.strip("chatroom-")
+        # Delete role
+        await discord.utils.get(interaction.guild.roles, name=f"room " + str(num)).delete()
+        # Delete channel
+        await interaction.channel.delete()
+    else:
+        # Sends response if this command is used outside of the guild_room_category_id category
+        await interaction.response.send_message("You are trying to delete a channel outside of the CHATROOMS catergoy, please use the delete command or delete this channel mannually.")
     
 discord_client.run(config.discord_application_token)
