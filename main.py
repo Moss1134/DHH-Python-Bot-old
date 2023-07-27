@@ -3,6 +3,31 @@ from discord.app_commands import CommandTree
 import random
 import config
 
+'''
+--------CHANGE LOGS---------
+VERSION: 1.2
+BUILD: 1.5.6
+BUGFIXES:
+ + Reach Command now defered
+ + List_Of_Listeners.count changed to len(List_Of_Listeners)
+ + Added check for if emoji matched chossen emoji in On_Raw_Reaction_Add()
+ + Listener changed to grab the first person in the list rather then someone random
+ + Remove Listener from list once listener is chossen
+ + Sets permissions of room to not include @verified
+ + Defered /done command
+FEATURE CHANGES:
+ + Added Reaction Roles
+ + Added Reaction Roles Embeds
+CONFIG.PY CHANGES:
+ + Added Reaction Role Guild Spesific Variables
+ 
+Author - @moss1134
+Discord - Marcia1134
+Telegram - @Mossmarcia1134
+
+Please contact me with any bugs or questions.
+'''
+
 # Discord API Set-up
 intents = discord.Intents.all()
 discord_client = discord.Client(intents=intents)
@@ -11,6 +36,12 @@ discord_client.tree = tree
 
 # Globals
 list_of_listeners = []
+# global age emoji's
+age_emojis = ["🌻", "🌺", "🌸", "🌷", "💐", "☘", "🌵", "🎋", "🌲"]
+dm_status_emojis = ["🔓", "🔐", "🔒"]
+timezone_emojis = ["🌑", "🌘", "🌗", "🌖", "🌕", "🌔", "🌓", "🌒"]
+# Colour Variables
+wisteria_c = 0xcba3e8
 
 @discord_client.event
 async def on_ready():
@@ -38,7 +69,44 @@ async def print_rules_embed(interaction: discord.Interaction):
     embed.add_field(name="Language", value="We only support English in this server currently for effective moderation. Your use of language should be SFW (safe for work) and respectful. NO SLURS, NSFW LANGUAGE, ETC", inline=False)
     embed.add_field(name="Disclaimer", value="Please be aware that these rules will be used to judge whether message sent in the server are up to standard. These rules are not rock solid and will be effective on a case by case basis. If we find that you have clearly broken a rule for a reason that is not well- reasonable, moderators, admins and other rule enforces will act in the way they see fit. Please be respectful that moderators are here to mod, not members, if you are a member and see something, please report it rather then attempt to mod the situation. Thank you for understanding.", inline= False)
     await interaction.channel.send(embed=embed)
+
+@discord_client.tree.command(name="print_reaction_roles_age", description="Prints the embed for reaction roles!")
+async def print_reaction_roles_age(interaction: discord.Interaction):
+    embed = discord.Embed(title="Age Reaction Roles!", colour=wisteria_c)
+    embed.add_field(name="13 - 🌻", value="|--", inline=True)
+    embed.add_field(name="14 - 🌺", value="|--", inline=True)
+    embed.add_field(name="15 - 🌸", value="|--", inline=True)
+    embed.add_field(name="16 - 🌷", value="|--", inline=True)
+    embed.add_field(name="17 - 💐", value="|--", inline=True)
+    embed.add_field(name="18 - ☘", value="|--", inline=True)
+    embed.add_field(name="19 - 🌵", value="|--", inline=True)
+    embed.add_field(name="20 - 🎋", value="|--", inline=True)
+    embed.add_field(name="20+ - 🌲", value="|--", inline=True)
+    embed.add_field(name="Remove all roles - 🚫", value="|--", inline=False)
+    message = await interaction.channel.send(embed=embed)
+    await message.add_reaction(str(age_emojis[0]))
+    await message.add_reaction(str(age_emojis[1]))
+    await message.add_reaction(str(age_emojis[2]))
+    await message.add_reaction(str(age_emojis[3]))
+    await message.add_reaction(str(age_emojis[4]))
+    await message.add_reaction(str(age_emojis[5]))
+    await message.add_reaction(str(age_emojis[6]))
+    await message.add_reaction(str(age_emojis[7]))
+    await message.add_reaction(str(age_emojis[8]))
+    await message.add_reaction(str("🚫"))
     
+@discord_client.tree.command(name="print_reaction_roles_dm_status", description="prints the reaction roles embed!")
+async def print_reaction_roles_dm_status(interaction: discord.Interaction):
+    embed = discord.Embed(title="DM Status Reaction Roles!", color=wisteria_c)
+    embed.add_field(name=f"DMs open - {dm_status_emojis[0]}", value="|--", inline=True)
+    embed.add_field(name=f"Ask for DMs - {dm_status_emojis[1]}", value="|--", inline=True)
+    embed.add_field(name=f"DMs closed - {dm_status_emojis[2]}", value="|--", inline=True)
+    embed.add_field(name="Remove all roles - 🚫", value="|--", inline=False)
+    message = await interaction.channel.send(embed=embed)
+    for x in dm_status_emojis:
+        await message.add_reaction(str(x))
+    await message.add_reaction(str("🚫"))
+
 # custom embeds
 
 @discord_client.tree.command(name="custom3_embed", description="Allows you to print a custom embed with 3 fields")
@@ -89,15 +157,28 @@ async def on_message(message):
         if message.content == "Thank you for verifying! You will now be added as a server user!":
             await message.delete(delay=3)
 
+# reaction roles
+
 @discord_client.event
 async def on_raw_reaction_add(payload):
-    message_id = config.verify_message_id
     emoji = "👍"
+    emoji_remove = "🚫"
     emoji_str = str(payload.emoji)
-    if payload.message_id == message_id and emoji_str == emoji:
-        guild = discord_client.get_guild(payload.guild_id)
-        user = guild.get_member(payload.user_id)
+    guild = discord_client.get_guild(payload.guild_id)
+    user = guild.get_member(payload.user_id)
+    if payload.message_id == config.verify_message_id and emoji_str == emoji:
         await user.add_roles(guild.get_role(int(config.guild_veified_role_id)))
+    elif payload.message_id == config.reaction_role_age_message_id and emoji_str in str(age_emojis):
+        await user.add_roles(guild.get_role(int(config.age_roles_id[age_emojis.index(emoji_str)])))
+    elif payload.message_id == config.reaction_role_age_message_id and emoji_str == str(emoji_remove):
+        for x in config.age_roles_id:
+            print(x)
+            await user.remove_roles(guild.get_role(x))
+    elif payload.message_id == config.reaction_role_dm_status_message_id and emoji_str in str(dm_status_emojis):
+        await user.add_roles(guild.get_role(int(config.dm_status_roles_id[dm_status_emojis.index(emoji_str)])))
+    elif payload.message_id == config.reaction_role_dm_status_message_id and emoji_str == str(emoji_remove):
+        for x in config.dm_status_roles_id:
+            await user.remove_roles(guild.get_role(x))
 
 # Introduction system:
 
@@ -134,20 +215,24 @@ async def leave(interaction: discord.Interaction):
 @discord_client.tree.command(name="reach", description="Reaches out to a random Active Listener")
 async def reach(interaction: discord.Interaction):
     global list_of_listeners
-    if list_of_listeners.count == 0:
+    if len(list_of_listeners) == 0:
         await interaction.response.send_message("Sorry, there are no current listeners avaliable, please wait 10 minutes and try again.")
     else:
+        await interaction.response.defer()
         # Variables
         category = discord.utils.get(interaction.guild.categories, id=config.guild_room_category_id)
-        listener = list_of_listeners[random.randint(0,len(list_of_listeners)-1)]
+        listener = list_of_listeners[0]
+        list_of_listeners.remove(listener)
         listener = interaction.guild.get_member_named(listener)
         num_of_chatrooms = len(category.channels)
         everyone_role = discord.utils.get(interaction.guild.roles, id=config.guild_global_role_id)
+        verified_role = discord.utils.get(interaction.guild.roles, id=config.verified_role_id)
         # Create a channel:
         channel = await category.create_text_channel(name=f"chatroom-{str(num_of_chatrooms)}")
         # Sets the permssions for @everyone:
         perms = discord.PermissionOverwrite(view_channel=False)
         await channel.set_permissions(everyone_role, overwrite=perms)
+        await channel.set_permissions(verified_role, overwrite=perms)
         # Create room role:
         room_role = await interaction.guild.create_role(name=f"room " + str(num_of_chatrooms))
         room_role = discord.utils.get(interaction.guild.roles, id=room_role.id)
@@ -157,7 +242,7 @@ async def reach(interaction: discord.Interaction):
         # Give everyone roles:
         await listener.add_roles(room_role)
         await interaction.user.add_roles(room_role)
-        await interaction.response.send_message(f"You have been connected with a listener! Please join chatroom {str(num_of_chatrooms)}!")
+        await interaction.followup.send(f"You have been connected with a listener! Please join chatroom {str(num_of_chatrooms)}!")
 
 # Deletes role and channel after member/listener is fininhed with the chat.
 
@@ -166,6 +251,7 @@ async def done(interaction: discord.Interaction):
     category = discord.utils.get(interaction.guild.categories, id=config.guild_room_category_id)
     list_of_removable_channels = [channel.name for channel in category.channels]
     if interaction.channel.name in list_of_removable_channels:
+        await interaction.response.defer()
         # Gets the room number for the room in question
         num: int = interaction.channel.name.strip("chatroom-")
         # Delete role
@@ -174,6 +260,6 @@ async def done(interaction: discord.Interaction):
         await interaction.channel.delete()
     else:
         # Sends response if this command is used outside of the guild_room_category_id category
-        await interaction.response.send_message("You are trying to delete a channel outside of the CHATROOMS catergoy, please use the delete command or delete this channel mannually.")
+        await interaction.followup.send("You are trying to delete a channel outside of the CHATROOMS catergoy, please use the delete command or delete this channel mannually.")
     
 discord_client.run(config.discord_application_token)
