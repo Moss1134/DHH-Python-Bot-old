@@ -27,7 +27,7 @@ DHH is seperated into Two major parts:
 > Unforunately the discord bot is running on my hardware currently so it's online time may vary or be very unstable. <br>
 
 ## Running DHH Bot
-> For this you can clone the GitHub and change the token varaible in the config file to the Token for your bot. <br>
+> For this you can clone the GitHub and change all varaibles starting with config. which include the Token for your bot. <br>
 > I am more then happy for anyone to take my code and run with it as this is comepletely open-source! <br>
 
 # The Goal With DHH Bot
